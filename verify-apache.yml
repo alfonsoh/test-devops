@@ -1,25 +1,20 @@
+---
 - hosts: webservers
-  vars:
-    http_port: 80
-    max_clients: 200
-  remote_user: root
+- become: yes
   tasks:
-  - name: ensure apache is at the latest version
+  - name: install httpd
     yum:
       name: httpd
       state: latest
-  - name: write the apache config file
-    template:
-      src: /srv/httpd.j2
-      dest: /etc/httpd.conf
-    notify:
-    - restart apache
-  - name: ensure apache is running
-    service:
-      name: httpd
-      state: started
-  handlers:
-    - name: restart apache
+  - name: create index.html file
+    file:
+      name: /var/www/html/index.html
+      state: touch
+    - name: add web content
+      lineinfile:
+        line: "your sample html file"
+        path: /var/www/html/index.html
+    - name: start httpd
       service:
         name: httpd
-        state: restarted
+        state: started
