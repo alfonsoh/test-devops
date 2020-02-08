@@ -5,4 +5,4 @@ print ("this is a string" + " too")
 first_string = 'Welcome'
 second_string = 'to'
 third_string = 'Python'
-print (first_string) + (' ') + (second_string) + (' ') + (third_string)
+print ((first_string) + (' ') + (second_string) + (' ') + (third_string))
