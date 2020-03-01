@@ -1,0 +1,8 @@
+#Specify a base image to run container
+FROM alpine
+
+#Install dependencies required for node js
+RUN npm install
+
+# Start npm from command
+CMD ["npm", "start"]
