@@ -1,0 +1,11 @@
+#Specify a base image to run container
+FROM node:alpine
+
+#Reference the files that need to be copied into the container
+COPY ./ ./
+
+#Install dependencies required for node js
+RUN npm install
+
+# Start npm from command
+CMD ["npm", "start"]
