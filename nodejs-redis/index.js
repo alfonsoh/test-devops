@@ -13,7 +13,7 @@ client.set('visits', 0);
 //defining the root endpoint
 app.get('/', (req, res) => {
     client.get('visits', (err, visits) => {
-        res.send('You just hollered at me: ' + visits 'times')
+        res.send('You just hollered at me: ' + visits + ' times')
         client.set('visits', parseInt(visits) + 1)
     })
 })
