@@ -1,4 +1,4 @@
-Here are some fundamental commands you need to know to navigate, understand, and manage linux based operating systems.
+Here are some fundamental commands you need to know to navigate, understand, and manage linux based operating systems. If you understand the use of these command you should be able to land a role as a systems administrator.
 
 1. ls
 ls lists files in a directory. Sysadmins and developers issue this command quite often. In the container space, this command can help determine your container image's directory and files. Besides looking up your files, ls can help you examine your permissions. In the example below, you can't run myapp because of a permissions issue. When you check the permissions using ls -l, you realize that the permissions do not have an "x" in -rw-r--r--, which are read and write only.
