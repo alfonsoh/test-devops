@@ -11,43 +11,34 @@ def main():
 
 
     print(uname_info)
-    print("Nodename: %s" %(uname_info[1]))
-    print("OS Info: %s (%s) - %s" % (uname_info[0], uname_info[2], uname_info[-1]))
+    print(f"Nodename: {uname_info[1]}")
+
+    print(f"OS Info: {uname_info[0]} ({uname_info[2]}) - {uname_info[-1]}")
 
     release_path = uname_info[-2].split()[-1]
-    print("OS Version release path: %s" % (release_path))
+    print(f"OS Version release path: {release_path}")
 
     date = ' '.join(uname_info[3].split()[4:10]) 
-    print("Date: %s" %(date))
+    print(f"Date: {date}")
 
     ip_address = socket.gethostbyname(socket.gethostname())
-    print("ip_address: %s" %(ip_address))
+    print(f"ip_address: {ip_address}")
 
-    username = os.getlogin()
-    print("username: %s" %(username))
+    proc = subprocess.check_output(["/System/Library/PrivateFrameworks/Apple80211.framework/Resources/airport -I"], shell=True).decode("utf-8")
 
-    proc = subprocess.Popen(["/System/Library/PrivateFrameworks/Apple80211.framework/Resources/airport", "-I"], stdout=subprocess.PIPE)
-
-    ssidOutput = proc.stdout.read().split()[-5]
-    print("ssid: %s" %(ssidOutput))
-
-    os.system("/System/Library/PrivateFrameworks/Apple80211.framework/Resources/airport -I | awk -F: '/ SSID/{print $2}'")
-
-    # uptime = subprocess.Popen("uptime")
-    # print("uptime: %s" %(uptime))
-
-    uptime = subprocess.Popen("uptime", stdout=subprocess.PIPE)
-    uptime_output = uptime.stdout.read()
-    uptimeDays = str(uptime_output).split(' ')
-    uptimeShortArr = uptimeDays[3:5]
-    uptimeShortArr.append(uptimeDays[6])
-
-    print(uptimeShortArr)
+    ssidOutput = proc.split()[-5]
+    print(f"ssid: {ssidOutput}")
 
 
-    uptimeJoined = ' '.join(uptimeShortArr)
-    print("uptime: %s hrs:mins" %(uptimeJoined))
+    system_software_overview = subprocess.check_output('system_profiler SPSoftwareDataType | grep -E "Time|Boot|Version|Mode|Name|Secure|Intregrity"', shell=True).decode("utf-8")
+    print()
+    for sys_info in system_software_overview.splitlines():
+        print(sys_info.strip())
 
+
+    print()
+    download_speed = subprocess.check_output('curl -s -S -n https://rallycurl.s3.amazonaws.com/MqdUJZGOWWgI -o /tmp/speedtest -w "time total: %{time_total}\nSpeed of Download: %{speed_download}\n" && rm /tmp/speedtest', shell=True).decode("utf-8")
+    print(download_speed)
 
 if __name__ == '__main__':
     main()
