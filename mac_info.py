@@ -35,7 +35,7 @@ def main():
     for sys_info in system_software_overview.splitlines():
         print(sys_info.strip())
 
-
+# Verify that speed test is accurate
     print()
     download_speed = subprocess.check_output('curl -s -S -n https://rallycurl.s3.amazonaws.com/MqdUJZGOWWgI -o /tmp/speedtest -w "time total: %{time_total}\nSpeed of Download: %{speed_download}\n" && rm /tmp/speedtest', shell=True).decode("utf-8")
     print(download_speed)
