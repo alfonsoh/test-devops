@@ -1,1 +1,0 @@
-rsync -zarv --ignore-existing --include="*/" --include="*.doc" --include="*.xls" --include="*.ppt" --include="*.jpg" --include="*.jpeg" --include="*.png" --include="*.gif" --include="*.pdf" --include="*.eps" --include="*.ai" --include="*.tiff" --include="*.psd" --include="*.heic" --exclude="*" "/sourch_path" "/desination_path"
