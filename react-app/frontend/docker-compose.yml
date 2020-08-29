@@ -17,3 +17,5 @@ services:
       - /app/node_modules
       - .:/app
     command: ["npm", "run", "start"]
+stdin_open: true
+tty: true
