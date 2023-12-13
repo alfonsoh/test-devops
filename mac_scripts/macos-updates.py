@@ -1,22 +1,9 @@
 import os
 import subprocess
+import platform
+import time
 
-# Check system uptime
-
-system_uptime = os.popen ('uptime') .read()[:-1]
-print (system_uptime)
-
-# Install homebrew
-
-os.system("/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"")
-
-# Configure system to run brew install commands
-
-os.system("(echo; echo 'eval "$(/usr/local/bin/brew shellenv)"') >> /Users/admin/.zprofile"")
-
-os.system("eval "$(/usr/local/bin/brew shellenv)"")
-
-# Insert sleep or wait command
+SECONDS_TO_DAYS = 1 / 86400
 
 def check_for_updates():
     try:
@@ -33,20 +20,45 @@ def install_updates():
     except subprocess.CalledProcessError as e:
         print(f"Error installing updates: {e}")
 
+
 if __name__ == "__main__":
-    print("Checking for updates...")
-    check_for_updates()
-    install_updates()
+    reboot = False;
+    
+    # Check system uptime
+    uptime_days = time.monotonic() * SECONDS_TO_DAYS
+    print(f'uptime: {uptime_days} days')
+    if (uptime_days > 10):
+        reboot = True
+    
+    version, _, architecture = platform.mac_ver()
+    print(f'version: {version}')
+    print(f'architecture: {architecture}')
+    
+    if int(version.split('.')[0]) < 14:
+        check_for_updates()
+        install_updates()
+        reboot = True
+    
+    # Install homebrew
+    
+    os.system("/bin/bash -c \"$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\"")
+    
+    # Configure system to run brew install commands
+    
+    os.system("(echo; echo 'eval \"$(/usr/local/bin/brew shellenv)\"') >> /Users/admin/.zprofile\"")
+    
+    os.system("eval \"$(/usr/local/bin/brew shellenv)\"")
 
-# Install or upgrade required packages
+    # Install or upgrade required packages
+    
+    os.system("brew install --cask firefox")
+    os.system("brew install --cask zoom")
+    os.system("brew install --cask slack")
+    os.system("brew install --cask google-chrome")
+    os.system("brew install --cask appcleaner")
+    os.system("brew install --cask the-unarchiver")
+    os.system("brew install --cask gimp")
 
-os.system("brew install --cask firefox")
-os.system("brew install --cask zoom")
-os.system("brew install --cask slack")
-os.system("brew install --cask google-chrome")
-os.system("brew install --cask appcleaner")
-os.system("brew install --cask the-unarchiver")
-os.system("brew install --cask gimp")
-
-# Reboot system after updates and packages
-os.system("shutdown -r now")
+    if reboot:
+        # Reboot system after updates and packages
+        os.system("shutdown -r now")
