@@ -21,8 +21,8 @@ def main():
     date = ' '.join(uname_info[3].split()[4:10]) 
     print(f"Date: {date}")
 
-    ip_address = socket.gethostbyname(socket.gethostname())
-    print(f"ip_address: {ip_address}")
+ #   ip_address = socket.gethostbyname(socket.gethostname())
+ #   print(f"ip_address: {ip_address}")
 
     proc = subprocess.check_output(["/System/Library/PrivateFrameworks/Apple80211.framework/Resources/airport -I"], shell=True).decode("utf-8")
 
@@ -36,9 +36,9 @@ def main():
         print(sys_info.strip())
 
 # Verify that speed test is accurate
-    print()
-    download_speed = subprocess.check_output('curl -s -S -n https://rallycurl.s3.amazonaws.com/MqdUJZGOWWgI -o /tmp/speedtest -w "time total: %{time_total}\nSpeed of Download: %{speed_download}\n" && rm /tmp/speedtest', shell=True).decode("utf-8")
-    print(download_speed)
+#    print()
+#    download_speed = subprocess.check_output('curl -s -S -n https://rallycurl.s3.amazonaws.com/MqdUJZGOWWgI -o /tmp/speedtest -w "time total: %{time_total}\nSpeed of Download: %{speed_download}\n" && rm /tmp/speedtest', shell=True).decode("utf-8")
+#    print(download_speed)
 
 if __name__ == '__main__':
     main()
