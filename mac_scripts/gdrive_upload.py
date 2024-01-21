@@ -7,13 +7,13 @@ gauth.LocalWebserverAuth()  # Creates local webserver and automatically handles 
 drive = GoogleDrive(gauth)
 
 # Local file path
-local_file_path = "/path/to/your/local/file.txt"
+local_file_path = "/tmp/client_upload_test.txt"
 
 # Google Drive folder ID where you want to copy the file
-folder_id = "your_folder_id"
+folder_id = "1mynH5r2dt-xp7453yqguku0ddVJta8Dq"
 
 # Create a GoogleDriveFile instance
-file_to_upload = drive.CreateFile({'title': 'file.txt', 'parents': [{'id': folder_id}]})
+file_to_upload = drive.CreateFile({'title': 'client_upload_test.txt', 'parents': [{'id': folder_id}]})
 
 # Set content of the file
 file_to_upload.SetContentFile(local_file_path)
