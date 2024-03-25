@@ -1,3 +1,9 @@
+# Get the user's username
+read -p "Username: " username
+
+# Get the user's password
+read -s -p -r "Password: " password
+
 # This command installs xcode command line tools
 xcode-select --install
 
@@ -17,8 +23,7 @@ wget https://swcdn.apple.com/content/downloads/62/37/052-40759-A_C4UWOSGC4S/ww0f
 # This command prepares the Sonoma installer
 sudo softwareupdate --fetch-full-installer --full-installer-version 14.4
 
-# This command installs Sonoma
-sudo /Applications/Install\ macOS\ Sonoma.app/Contents/Resources/startosinstall --agreetolicense --forcequitapps --passprompt
+echo $password | sudo /Applications/Install\ macOS\ Sonoma.app/Contents/Resources/startosinstall --agreetolicense --forcequitapps --user $username --stdinpass
 
 #Add timer to notify end users update is complete
 setalarm() {
