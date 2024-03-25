@@ -1,8 +1,10 @@
-# Get the user's username
-read -p "Username: " username
-
-# Get the user's password
-read -s -p -r "Password: " password
+while getopts u:p: flag
+do
+    case "${flag}" in
+        u) username=${OPTARG};;
+        p) password=${OPTARG};;
+    esac
+done
 
 # This command installs xcode command line tools
 xcode-select --install
