@@ -1,0 +1,121 @@
+from nicegui import ui
+import requests
+
+# GitHub API Base URL
+GITHUB_API_URL = "https://api.github.com"
+
+def validate_token(github_token):
+    """Checks if the GitHub token is valid."""
+    url = f"{GITHUB_API_URL}/user"
+    headers = {"Authorization": f"token {github_token}"}
+    
+    response = requests.get(url, headers=headers)
+    return response.status_code != 401
+
+def check_repository_exists(github_token, owner, repo):
+    """Checks if the repository exists."""
+    url = f"{GITHUB_API_URL}/repos/{owner}/{repo}"
+    headers = {"Authorization": f"token {github_token}"}
+    
+    response = requests.get(url, headers=headers)
+    return response.status_code != 404
+
+def check_user_exists(github_token, username):
+    """Checks if the GitHub user exists."""
+    url = f"{GITHUB_API_URL}/users/{username}"
+    headers = {"Authorization": f"token {github_token}"}
+    
+    response = requests.get(url, headers=headers)
+    return response.status_code != 404
+
+def add_collaborator(github_token, owner, repo, username_to_invite, role):
+    """Adds a user as a collaborator to the specified repository."""
+    url = f"{GITHUB_API_URL}/repos/{owner}/{repo}/collaborators/{username_to_invite}"
+    
+    headers = {
+        "Authorization": f"token {github_token}",
+        "Accept": "application/vnd.github.v3+json"
+    }
+    
+    data = {"permission": role}  # 'pull', 'push', 'admin'
+    
+    response = requests.put(url, json=data, headers=headers)
+
+    if response.status_code in [201, 204]:
+        return f"✅ Success: {username_to_invite} has been granted '{role}' access to '{repo}'."
+    elif response.status_code == 403:
+        return f"❌ Error: Permission denied. You may not have the required access to modify '{repo}'."
+    elif response.status_code == 404:
+        return "❌ Error: User or repository not found. Please check your inputs."
+    else:
+        return f"❌ Unexpected Error: {response.status_code} - {response.json()}"
+
+def remove_collaborator(github_token, owner, repo, username_to_remove):
+    """Removes a user from the repository."""
+    url = f"{GITHUB_API_URL}/repos/{owner}/{repo}/collaborators/{username_to_remove}"
+    
+    headers = {
+        "Authorization": f"token {github_token}",
+        "Accept": "application/vnd.github.v3+json"
+    }
+    
+    response = requests.delete(url, headers=headers)
+
+    if response.status_code == 204:
+        return f"✅ Success: {username_to_remove} has been removed from '{repo}'."
+    elif response.status_code == 403:
+        return f"❌ Error: Permission denied. You may not have the required access to modify '{repo}'."
+    elif response.status_code == 404:
+        return "❌ Error: User or repository not found. Please check your inputs."
+    else:
+        return f"❌ Unexpected Error: {response.status_code} - {response.json()}"
+
+def process_request():
+    """Handles user input and processes the GitHub request."""
+    github_token = token_input.value.strip()
+    owner = owner_input.value.strip()
+    repo = repo_input.value.strip()
+    username = username_input.value.strip()
+    action = action_select.value
+    role = role_select.value if action == "grant" else None
+
+    if not validate_token(github_token):
+        result_label.set_text("❌ Invalid GitHub token. Please check and try again.")
+        return
+
+    if not check_repository_exists(github_token, owner, repo):
+        result_label.set_text(f"❌ Repository '{owner}/{repo}' not found.")
+        return
+
+    if not check_user_exists(github_token, username):
+        result_label.set_text(f"❌ GitHub user '{username}' not found.")
+        return
+
+    if action == "grant":
+        result = add_collaborator(github_token, owner, repo, username, role)
+    else:
+        result = remove_collaborator(github_token, owner, repo, username)
+
+    result_label.set_text(result)
+
+# UI Layout
+ui.label("GitHub Repository Access Manager").classes("text-2xl font-bold mb-4")
+
+with ui.card():
+    with ui.column().classes("gap-2"):
+        token_input = ui.input("GitHub Personal Access Token").props("type=password").classes("w-full").props("size=80")
+        owner_input = ui.input("GitHub Username or Organization").classes("w-full")
+        repo_input = ui.input("Repository Name").classes("w-full")
+        username_input = ui.input("GitHub Username to Modify").classes("w-full")
+
+        action_select = ui.select(["grant", "remove"], label="Action").classes("w-full")
+
+        role_select = ui.select(["pull", "push", "admin"], label="Permission Level").classes("w-full")
+        role_select.bind_visibility_from(action_select, "value", lambda v: v == "grant")
+
+        ui.button("Submit", on_click=process_request).classes("w-full bg-blue-500 text-white")
+
+    result_label = ui.label().classes("text-lg font-semibold mt-4")
+
+# Run the NiceGUI app
+ui.run(title="GitHub Access Manager")
