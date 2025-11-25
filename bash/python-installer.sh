@@ -1,181 +1,129 @@
 #!/usr/bin/env bash
-# setup_chf_optimizer.sh
-# Cross-platform setup for macOS (Homebrew) and Ubuntu/Debian (apt)
+# macOS auto-installer for chf_optimizer
+# Uses Homebrew Python 3.12/3.11 automatically
 
 set -euo pipefail
 
-# -------------------------
-# Config / Defaults
-# -------------------------
-ZIP_PATH="${1:-/tmp/chf_optimizer.zip}"         # path to the project zip
-INSTALL_PREFIX="${2:-$HOME/chf_optimizer}"      # install location
-RUN_AFTER="${RUN_AFTER:-false}"                  # set RUN_AFTER=true to run optimizer.py after setup
-PY_PKGS="numpy pandas databento toml requests"
+ZIP_PATH="${1:-/tmp/chf_optimizer.zip}"
+INSTALL_PREFIX="${2:-$HOME/chf_optimizer}"
+RUN_AFTER="${RUN_AFTER:-false}"
 
-# -------------------------
-# Helpers
-# -------------------------
-need_cmd() { command -v "$1" >/dev/null 2>&1; }
-die() { echo "Error: $*" >&2; exit 1; }
-msg() { printf "\n\033[1m%s\033[0m\n" "$*"; }
-
-# -------------------------
-# Pre-flight checks
-# -------------------------
-[ -f "$ZIP_PATH" ] || die "Zip file not found at: $ZIP_PATH"
-
-OS="$(uname -s)"
-case "$OS" in
-  Darwin)   PLATFORM="macos" ;;
-  Linux)    PLATFORM="linux" ;;
-  *)        die "Unsupported OS: $OS" ;;
-esac
-
-# -------------------------
-# macOS setup (Homebrew)
-# -------------------------
-install_macos_deps() {
-  msg "Detected macOS"
-
-  # Ensure Xcode Command Line Tools (for compilers, headers, etc.)
-  if ! xcode-select -p >/dev/null 2>&1; then
-    msg "Installing Xcode Command Line Tools… (this may prompt a GUI installer)"
-    xcode-select --install || true
-    echo "If a popup appeared, complete that installation, then re-run this script if it fails here."
-  fi
-
-  # Ensure Homebrew
-  if ! need_cmd brew; then
-    msg "Homebrew not found. Installing Homebrew…"
-    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-    # add brew to PATH for current session if needed
-    if [[ -d "/opt/homebrew/bin" ]]; then
-      eval "$(/opt/homebrew/bin/brew shellenv)"
-    elif [[ -d "/usr/local/bin" ]]; then
-      export PATH="/usr/local/bin:$PATH"
-    fi
-  else
-    msg "Updating Homebrew…"
-    brew update
-  fi
-
-  # Install packages. macOS has unzip and curl preinstalled, but brew ensures consistency.
-  BREW_PKGS=(python wget unzip)
-  msg "Installing packages with Homebrew: ${BREW_PKGS[*]}"
-  brew install "${BREW_PKGS[@]}" || true
-
-  # Prefer Homebrew Python if available
-  if need_cmd python3; then
-    PYTHON_BIN="$(command -v python3)"
-  else
-    die "python3 not found even after brew install."
-  fi
-}
-
-# -------------------------
-# Ubuntu/Debian setup (apt)
-# -------------------------
-install_linux_deps() {
-  msg "Detected Linux (assuming Ubuntu/Debian)"
-  if ! need_cmd apt-get; then
-    die "apt-get not found. This script expects Ubuntu/Debian for Linux. For other distros, install:
-      - build tools (e.g. base-devel / @development-tools)
-      - python3, python3-venv, python3-pip, python3-dev
-      - curl, wget, unzip"
-  fi
-
-  if [ "$EUID" -ne 0 ] && ! need_cmd sudo; then
-    die "sudo not found. Run as root or install sudo."
-  fi
-  SUDO="$( [ "$EUID" -eq 0 ] && echo "" || echo "sudo" )"
-
-  $SUDO apt-get update -y
-  $SUDO apt-get install -y \
-    software-properties-common \
-    curl \
-    wget \
-    build-essential \
-    python3 \
-    python3-venv \
-    python3-pip \
-    python3-dev \
-    unzip
-
-  if need_cmd python3; then
-    PYTHON_BIN="$(command -v python3)"
-  else
-    die "python3 not found after apt install."
-  fi
-}
-
-# -------------------------
-# Install system deps
-# -------------------------
+# Must be initialized for "set -u"
 PYTHON_BIN=""
-case "$PLATFORM" in
-  macos) install_macos_deps ;;
-  linux) install_linux_deps ;;
-esac
 
-# -------------------------
-# Create project dir & venv
-# -------------------------
-msg "Creating project directory at: $INSTALL_PREFIX"
-mkdir -p "$INSTALL_PREFIX"
-cd "$INSTALL_PREFIX"
+msg() { echo -e "\033[1;32m[INFO]\033[0m $*"; }
+warn() { echo -e "\033[1;33m[WARN]\033[0m $*"; }
+err()  { echo -e "\033[1;31m[ERROR]\033[0m $*" >&2; exit 1; }
 
-if [ ! -d ".venv" ]; then
-  msg "Creating virtual environment in .venv"
-  "$PYTHON_BIN" -m venv .venv
-fi
+# -------------------------------------------------------
+# Ensure Homebrew exists
+# -------------------------------------------------------
+ensure_homebrew() {
+  if ! command -v brew &>/dev/null; then
+    warn "Homebrew not found. Installing Homebrew…"
+    /bin/bash -c \
+      "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+  fi
 
-# shellcheck disable=SC1091
-source .venv/bin/activate
+  eval "$(/opt/homebrew/bin/brew shellenv)"
+}
 
-# -------------------------
-# Python packages
-# -------------------------
-msg "Upgrading pip and installing Python dependencies"
-python -m pip install --upgrade pip
-python -m pip install $PY_PKGS
+# -------------------------------------------------------
+# Detect brew Python, or install python@3.12 automatically
+# -------------------------------------------------------
+detect_python() {
+  local py312="/opt/homebrew/opt/python@3.12/bin/python3.12"
+  local py311="/opt/homebrew/opt/python@3.11/bin/python3.11"
 
-# -------------------------
-# Unzip project
-# -------------------------
-msg "Unzipping project from: $ZIP_PATH"
-TMP_EXTRACT="$(mktemp -d)"
-unzip -q "$ZIP_PATH" -d "$TMP_EXTRACT"
+  if [[ -x "$py312" ]]; then
+    PYTHON_BIN="$py312"
+    msg "Using Python 3.12 ($PYTHON_BIN)"
+    return
+  fi
 
-# If the archive contains a top-level chf_optimizer dir, use it; otherwise gather all into one.
-if [ -d "$TMP_EXTRACT/chf_optimizer" ]; then
-  mkdir -p "$INSTALL_PREFIX/chf_optimizer"
-  rsync -a "$TMP_EXTRACT/chf_optimizer/" "$INSTALL_PREFIX/chf_optimizer/"
-else
-  mkdir -p "$INSTALL_PREFIX/chf_optimizer"
-  rsync -a "$TMP_EXTRACT/" "$INSTALL_PREFIX/chf_optimizer/"
-fi
-rm -rf "$TMP_EXTRACT"
+  if [[ -x "$py311" ]]; then
+    PYTHON_BIN="$py311"
+    msg "Using Python 3.11 ($PYTHON_BIN)"
+    return
+  fi
 
-# -------------------------
-# Done + optional run
-# -------------------------
-cd "$INSTALL_PREFIX/chf_optimizer"
+  warn "No suitable Python found. Installing python@3.12…"
+  brew install python@3.12
 
-cat <<EOF
+  if [[ ! -x "$py312" ]]; then
+    err "python@3.12 did not install correctly."
+  fi
 
-✅ Setup complete!
+  PYTHON_BIN="$py312"
+  msg "Python installed: $PYTHON_BIN"
+}
 
-To run the optimizer:
-  cd "$INSTALL_PREFIX/chf_optimizer"
+# -------------------------------------------------------
+# Prepare venv and upgrade pip
+# -------------------------------------------------------
+prepare_environment() {
+  msg "Preparing install directory $INSTALL_PREFIX"
+  rm -rf "$INSTALL_PREFIX"
+  mkdir -p "$INSTALL_PREFIX"
+
+  msg "Creating virtual environment..."
+  "$PYTHON_BIN" -m venv "$INSTALL_PREFIX/.venv"
+
+  msg "Activating venv and upgrading pip tools..."
   source "$INSTALL_PREFIX/.venv/bin/activate"
+  pip install --upgrade pip setuptools wheel
+}
+
+# -------------------------------------------------------
+# Extract Zip + Install dependencies
+# -------------------------------------------------------
+install_project() {
+  msg "Extracting ZIP to $INSTALL_PREFIX"
+  unzip -o "$ZIP_PATH" -d "$INSTALL_PREFIX"
+
+  cd "$INSTALL_PREFIX/chf_optimizer" || \
+    err "chf_optimizer directory not found."
+
+  msg "Installing databento..."
+  pip install databento
+
+  msg "Installing remaining Python packages..."
+  pip install numpy pandas toml requests
+}
+
+# -------------------------------------------------------
+# Optional auto-run
+# -------------------------------------------------------
+run_optimizer() {
+  msg "Running optimizer.py…"
+  source "$INSTALL_PREFIX/.venv/bin/activate"
+  cd "$INSTALL_PREFIX/chf_optimizer"
   python optimizer.py
+}
 
-Tip: To auto-run at the end, set:
-  RUN_AFTER=true ./setup_chf_optimizer.sh "$ZIP_PATH" "$INSTALL_PREFIX"
+# -------------------------------------------------------
+# Main workflow
+# -------------------------------------------------------
+main() {
+  msg "Starting macOS CHF optimizer installation…"
 
-EOF
+  ensure_homebrew
+  detect_python       # MUST run before using $PYTHON_BIN
+  prepare_environment
+  install_project
 
-if [ "$RUN_AFTER" = "true" ]; then
-  msg "RUN_AFTER=true — launching optimizer.py…"
-  python optimizer.py
-fi
+  msg "Setup complete!"
+  echo
+  echo "To run manually:"
+  echo "  cd \"$INSTALL_PREFIX/chf_optimizer\""
+  echo "  source \"$INSTALL_PREFIX/.venv/bin/activate\""
+  echo "  python optimizer.py"
+  echo
+
+  if [[ "$RUN_AFTER" == "true" ]]; then
+    run_optimizer
+  fi
+}
+
+main "$@"
+
